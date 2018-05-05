@@ -1,3 +1,9 @@
+global win_size
+global hop_size
+
+win_size = 1024.0
+hop_size = 512.0
+
 def get_matlab_engine(matlab_module, matlab_engine):
     global matlab
     global m
@@ -7,11 +13,11 @@ def get_matlab_engine(matlab_module, matlab_engine):
 def audioread(filename):
     x, fs = m.audioread(filename, nargout = 2) # all audio files are mono
     if fs != 24414:
-        x = m.resample(x, fs, 24414)
+        x = m.resample(x, fs, 24414.0)
         fs = 24414
     return x, fs
 
-def spectrogram(x, fs, win_size = 1024, hop_size = 512):
+def spectrogram(x, fs):
     s, w = m.spectrogram(x, m.hamming(win_size), win_size - hop_size, nargout = 2)
     f = m.times(w, fs / 2.0 / m.pi())
     return s, f
@@ -81,5 +87,23 @@ def mfcc(s_hz, fb, n_dct = 15):
     mfcc = dct[1:(n_dct + 1)]
 
     # normalize
-    mfcc = m.rdivide(m.minus(mfcc, m.mean(mfcc, 1)), m.std(mfcc, 0, 2))
+    mean = m.repmat(m.mean(mfcc, 1), m.size(mfcc, 1), 1)
+    std = m.repmat(m.std(mfcc, 0, 1), m.size(mfcc, 1), 1)
+    mfcc = m.rdivide(m.minus(mfcc, mean), std)
+    # mfcc = m.rdivide(m.minus(mfcc, m.repmat(m.mean(mfcc, 1), m.size(mfcc,1), 1)), m.std(mfcc, 0, 2))
     return mfcc
+
+
+# get the energy for time-domian signal 
+def energy(x, fs):
+    m_energy = m.ceil((len(x) - win_size) / hop_size)
+    padding_len = m_energy * hop_size + win_size - len(x)
+    # padding_len = m_energy * 256 + 1024 - len(x)
+    x = m.padarray(x, matlab.double([padding_len, 0]), 0, 'post')
+
+    # calculate the energy from 0 to N
+    window = m.transpose(m.hamming(win_size))
+    x = m.power(m.buffer(x, win_size, hop_size), 2.0)
+    E = m.rdivide(m.mtimes(window,x), win_size)
+    return E
+
