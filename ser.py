@@ -106,4 +106,3 @@ def energy(x, fs):
     x = m.power(m.buffer(x, win_size, hop_size), 2.0)
     E = m.rdivide(m.mtimes(window,x), win_size)
     return E
-
