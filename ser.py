@@ -1,8 +1,10 @@
 global win_size
 global hop_size
+global target_fs
 
 win_size = 1024.0
 hop_size = 512.0
+target_fs = 24414.0
 
 def get_matlab_engine(matlab_module, matlab_engine):
     global matlab
@@ -10,11 +12,16 @@ def get_matlab_engine(matlab_module, matlab_engine):
     matlab = matlab_module
     m = matlab_engine
 
+def mat2list(matlab_double):
+    if len(matlab_double) == 1:
+        return list(matlab_double[0])
+    return [list(x) for x in matlab_double]
+
 def audioread(filename):
     x, fs = m.audioread(filename, nargout = 2) # all audio files are mono
-    if fs != 24414:
-        x = m.resample(x, fs, 24414.0)
-        fs = 24414
+    if fs != target_fs:
+        x = m.resample(x, target_fs, fs)
+        fs = target_fs
     return x, fs
 
 def spectrogram(x, fs):
@@ -52,7 +59,7 @@ def mfcc_fb(f, min_hz = 80, max_hz = 8000, n_filt = 40):
     # frequency range of adult male voice is upto 8 kHz
     min_mel = hz2mel(min_hz)
     max_mel = hz2mel(max_hz)
-    centers = list(m.linspace(min_mel, max_mel, n_filt)[0]) # linear in mel
+    centers = mat2list(m.linspace(min_mel, max_mel, n_filt)) # linear in mel
     left = 2 * centers[0] - centers[1] # left bottom of the first triangle
     right = 2 * centers[-1] - centers[-2] # right bottom of the last triangle
     centers = [left] + centers + [right]
@@ -61,13 +68,13 @@ def mfcc_fb(f, min_hz = 80, max_hz = 8000, n_filt = 40):
     # create the filterbank matrix
     # number of rows: number of filters
     # number of columns: number of frequency bins in spectrogram, i.e. length of f
-    centers = find_nearest(centers, list(m.transpose(f)[0]))
+    centers = find_nearest(centers, mat2list(m.transpose(f)))
     fb = [[0] * len(f) for i in range(n_filt)]
-    for i in range(0, n_filt):
+    for i in range(n_filt):
         # left slope, "/" shape
-        fb[i][centers[i]:(centers[i + 1] + 1)] = list(m.linspace(0.0, 1.0, centers[i + 1] - centers[i] + 1)[0])
+        fb[i][centers[i]:(centers[i + 1] + 1)] = mat2list(m.linspace(0.0, 1.0, centers[i + 1] - centers[i] + 1))
         # right slope, "\" shape
-        fb[i][centers[i + 1]:(centers[i + 2] + 1)] = list(m.linspace(1.0, 0.0, centers[i + 2] - centers[i + 1] + 1)[0])
+        fb[i][centers[i + 1]:(centers[i + 2] + 1)] = mat2list(m.linspace(1.0, 0.0, centers[i + 2] - centers[i + 1] + 1))
 
         # normalization of each row
         row_sum = sum(fb[i])
@@ -93,8 +100,7 @@ def mfcc(s_hz, fb, n_dct = 15):
     # mfcc = m.rdivide(m.minus(mfcc, m.repmat(m.mean(mfcc, 1), m.size(mfcc,1), 1)), m.std(mfcc, 0, 2))
     return mfcc
 
-
-# get the energy for time-domian signal 
+# get the energy for time-domain signal 
 def energy(x, fs):
     m_energy = m.ceil((len(x) - win_size) / hop_size)
     padding_len = m_energy * hop_size + win_size - len(x)
