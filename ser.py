@@ -1,7 +1,11 @@
 global win_size
 global hop_size
 global target_fs
+global py_min_lag
+global py_max_lag
 
+py_min_lag = 9 
+py_max_lag = 800
 win_size = 1024.0
 hop_size = 512.0
 target_fs = 24414.0
@@ -108,3 +112,36 @@ def energy(x, fs):
     x = m.times(buffer, buffer)
     E = m.rdivide(m.mtimes(window, x), win_size)
     return matlab.double(E[0][:-1]) # discard the last column since it is all zero
+
+## pitch version
+# the input parameter s is the spectrogram and fs is the time-domain frequency
+def pitch(s, fs):
+    min_lag = py_min_lag +1.0
+    max_lag = py_max_lag +0.0
+    # window = m.hamming(win_size)
+    s = m.real(m.ifft(m.power(m.abs(s), 2.0), win_size, 1.0))
+    S = s[py_min_lag:py_max_lag]     # slice in the row
+    divide_factor = m.transpose(m.minus(win_size, m.linspace(min_lag, max_lag, (max_lag - min_lag + 1))))
+    divide_factor = m.repmat(divide_factor, 1.0, m.size(S, 2.0))
+    rx = m.rdivide(S, divide_factor)
+    m.imagesc(matlab.double(rx))
+
+    # find pitch for each time window
+    # normalizing 
+    # rx_nor = m.sort(rx)
+    size = int(m.size(rx, 1.0))
+    thresh = 0.5
+    peak = [0 for n in range(0, size)]
+    peak_index = [0 for n in range(0, size)]
+    lag = [0 for n in range(0, size)]
+    pitch = [0 for n in range(0, size)]
+    for i in range(size):
+        rx_normal = m.rdivide(rx[i], m.max(rx[i]))
+        rx_peak = m.plus(m.minus(rx_normal, thresh), m.abs(m.minus(rx_normal, thresh)))
+        peak[i], peak_index[i] = m.max(rx_peak, nargout = 2)
+        lag[i] = (peak_index[i] + min_lag -1) / fs
+        pitch[i] = m.rdivide(1.0, lag[i])
+    # print(m.size(re_normal))
+    # print(type(re_normal))
+    return pitch
+
