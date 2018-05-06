@@ -9,8 +9,10 @@ target_fs = 24414.0
 def get_matlab_engine(matlab_module, matlab_engine):
     global matlab
     global m
+    global window
     matlab = matlab_module
     m = matlab_engine
+    window = m.transpose(m.hamming(win_size))
 
 def mat2list(matlab_double):
     if len(matlab_double) == 1:
@@ -80,11 +82,11 @@ def mfcc_fb(f, min_hz = 80, max_hz = 8000, n_filt = 40):
         row_sum = sum(fb[i])
         for j in range(len(f)):
             fb[i][j] /= row_sum
-    return fb
+    return matlab.double(fb)
 
 def mfcc(s_hz, fb, n_dct = 15):
     # compute the mel power spectrum in dB
-    s_mel = m.mtimes(matlab.double(fb), s_hz)
+    s_mel = m.mtimes(fb, s_hz)
     power = m.db(m.power(m.abs(s_mel), 2.0))
 
     # compute the DCT of each column of the mel spectrum
@@ -102,13 +104,7 @@ def mfcc(s_hz, fb, n_dct = 15):
 
 # get the energy for time-domain signal 
 def energy(x, fs):
-    m_energy = m.ceil((len(x) - win_size) / hop_size)
-    padding_len = m_energy * hop_size + win_size - len(x)
-    # padding_len = m_energy * 256 + 1024 - len(x)
-    x = m.padarray(x, matlab.double([padding_len, 0]), 0, 'post')
-
-    # calculate the energy from 0 to N
-    window = m.transpose(m.hamming(win_size))
-    x = m.power(m.buffer(x, win_size, hop_size), 2.0)
-    E = m.rdivide(m.mtimes(window,x), win_size)
-    return E
+    buffer = m.buffer(x, win_size, win_size - hop_size, 'nodelay')
+    x = m.times(buffer, buffer)
+    E = m.rdivide(m.mtimes(window, x), win_size)
+    return matlab.double(E[0][:-1]) # discard the last column since it is all zero
