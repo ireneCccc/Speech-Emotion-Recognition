@@ -33,7 +33,7 @@ def run(parent_dir, matlab_engine, arguments, emo_read_num = 7, file_read_num = 
         emotion_list = [v for v in range(1, 8)]
         for emotion in emotion_list[:emo_read_num]:
             time_start = time.time()
-            print('Reading emotion #' + str(emotion) + ' in ' + dataset + '...')
+            print('Reading emotion #' + str(emotion) + ' in ' + dataset + '_' + task + '...')
             emotion_dir = os.path.join(dataset_dir, str(emotion))
             file_count = 0
             file_list = os.listdir(emotion_dir)
