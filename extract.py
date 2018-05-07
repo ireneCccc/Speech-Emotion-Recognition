@@ -11,7 +11,7 @@ def aggregate(matrix):
            ser.mat2list(m.var(matrix[:int(len(matrix) / 2)])) + \
            ser.mat2list(m.var(matrix[int(len(matrix) / 2):]))
 
-def run(parent_dir, matlab_engine, arguments, emo_read_num = 7, file_read_num = -1, is_train = True, TESS_trim = 0.62, RAVDESS_trim = 0.26):
+def run(parent_dir, matlab_engine, arguments, emo_read_num = 7, file_read_num = -1, task = 'train', TESS_trim = 0.62, RAVDESS_trim = 0.26):
     global m
     m = matlab_engine
     ser.get_matlab_engine(m, arguments)
@@ -22,29 +22,21 @@ def run(parent_dir, matlab_engine, arguments, emo_read_num = 7, file_read_num = 
     nowdate = datetime.datetime.now()
     savename = 'feat_' + str(nowdate.month).zfill(2) + str(nowdate.day).zfill(2) + '-' + \
                str(nowdate.hour).zfill(2) + str(nowdate.minute).zfill(2) + '_' + \
-               str(arguments[0]) + 'win_' + str(emo_read_num) + 'emo_' + str(file_read_num) + 'files_'
-    if is_train:
-        savename += 'train.csv'
-    else:
-        savename += 'test.csv'
+               str(arguments[0]) + 'win_' + str(emo_read_num) + 'emo_' + str(file_read_num) + 'files_' + \
+               task + '.csv'
     f = open(os.path.join(parent_dir, savename), 'w', newline='')
     print('Will write to ' + savename)
     spamwriter = csv.writer(f)
 
     for dataset in ['TESS', 'RAVDESS']:
-        if is_train:
-            dataset_dir = os.path.join(parent_dir, dataset)
-        else:
-            dataset_dir = os.path.join(parent_dir, dataset + '_test')
+        dataset_dir = os.path.join(parent_dir, dataset + '_' + task)
         emotion_list = [v for v in range(1, 8)]
-        random.shuffle(emotion_list)
         for emotion in emotion_list[:emo_read_num]:
             time_start = time.time()
             print('Reading emotion #' + str(emotion) + ' in ' + dataset + '...')
             emotion_dir = os.path.join(dataset_dir, str(emotion))
             file_count = 0
             file_list = os.listdir(emotion_dir)
-            random.shuffle(file_list)
             for file in file_list:
                 if file_read_num != -1 and file_count >= file_read_num:
                     break
