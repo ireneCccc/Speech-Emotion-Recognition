@@ -37,7 +37,7 @@ def audioread(filename):
     return x, fs
 
 def spectrogram(x, fs):
-    return m.spectrogram(x, m.hamming(win_size), win_size - hop_size, matlab.double(), fs, nargout = 2)
+    return m.spectrogram(x, window, win_size - hop_size, matlab.double(), fs, nargout = 2)
 
 # Find indices of nearest values in the reference list
 def find_nearest(val, ref):
@@ -113,14 +113,21 @@ def energy(x, win_count):
     else:
         X = x
     X = [v[0] for v in X]
+    dX = [0] * len(X)
+    for i in range(1, len(X)):
+        dX[i] = X[i] - X[i - 1]
     E = [0] * win_count
+    dE = [0] * win_count
     for i in range(win_count):
         E[i] = sum([ \
             X[i * int(hop_size) + j] * X[i * int(hop_size) + j] * window[0][j] \
             for j in range(int(win_size))]) / win_size
-    return matlab.double(E) # discard the last column since it is all zero
+        dE[i] = sum([ \
+            dX[i * int(hop_size) + j] * dX[i * int(hop_size) + j] * window[0][j] \
+            for j in range(int(win_size))]) / win_size
+    return matlab.double(E), matlab.double(dE)
 
-# with buffer. 6 times slower
+# with buffer, 6 times slower
 def energy_buf(x):
     buffer = m.buffer(x, win_size, win_size - hop_size, 'nodelay')
     x = m.times(buffer, buffer)
@@ -140,4 +147,6 @@ def pitch(s, fs):
 
     # find pitch for each time window
     foo, index = m.max(rx, matlab.double(), 1, nargout = 2)
-    return matlab.double([fs / (i + py_min_lag) for i in index[0]])
+    pitch = matlab.double([fs / (i + py_min_lag) for i in index[0]])
+    dpitch = m.horzcat(0.0, m.diff(pitch))
+    return pitch, dpitch

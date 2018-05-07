@@ -20,10 +20,9 @@ def run(parent_dir, matlab_engine, arguments, emo_read_num = 7, file_read_num = 
     
     features = []
     nowdate = datetime.datetime.now()
-    savename = 'feat_' + str(nowdate.month).zfill(2) + str(nowdate.day).zfill(2) + '-' + \
-               str(nowdate.hour).zfill(2) + str(nowdate.minute).zfill(2) + '_' + \
-               str(arguments[0]) + 'win_' + str(emo_read_num) + 'emo_' + str(file_read_num) + 'files_' + \
-               task + '.csv'
+    savename = 'feat_' + str(arguments[0]) + 'win_' + task + \
+               '[' + str(nowdate.month).zfill(2) + str(nowdate.day).zfill(2) + '-' + \
+               str(nowdate.hour).zfill(2) + str(nowdate.minute).zfill(2) + '].csv'
     f = open(os.path.join(parent_dir, savename), 'w', newline='')
     print('Will write to ' + savename)
     spamwriter = csv.writer(f)
@@ -53,14 +52,14 @@ def run(parent_dir, matlab_engine, arguments, emo_read_num = 7, file_read_num = 
                     if 'fb' not in dir(): # need only to compute filter once
                         fb = ser.mfcc_fb(f)
                     mfcc = ser.mfcc(s, fb)
-                    energy = ser.energy(x, len(s[0]))
-                    pitch = ser.pitch(s, fs)
+                    energy, dE = ser.energy(x, len(s[0]))
+                    pitch, dpitch = ser.pitch(s, fs)
 
                     if len(set([len(mfcc[0]), len(energy[0]), len(pitch[0])])) != 1:
                         print('  Error: File ' + file + ' has different numbers of windows among different features!')
                     else:
                         # vertically concatenate features of all windows (then transpose)
-                        concat = m.transpose(m.vertcat(energy, pitch, mfcc))
+                        concat = m.transpose(m.vertcat(energy, pitch, dE, dpitch, mfcc))
                         
                         # remove windows where energy is very low (= silence)
                         if dataset == 'TESS':
