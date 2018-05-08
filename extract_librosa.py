@@ -1,22 +1,22 @@
-import sys
-argc = len(sys.argv)
-if argc < 2:
-    print('Please give enough arguments:\n  part[, emo_read_num=7, file_read_num=-1, win_size=1024, hop_size=512]')
-    exit()
+##import sys
+##argc = len(sys.argv)
+##if argc < 2:
+##    print('Please give enough arguments:\n  part[, emo_read_num=7, file_read_num=-1, win_size=1024, hop_size=512]')
+##    exit()
 
 import numpy as np
 import librosa
 from scipy.io import wavfile
 import os, time, csv, datetime
 
-part = sys.argv[1]
+##part = sys.argv[1]
 parameters = [7, -1, 1024, 512, 80, 300, 8000]
-parameters[:(argc - 2)] = sys.argv[2:]
+##parameters[:(argc - 2)] = sys.argv[2:]
 [emo_read_num, file_read_num, win_size, hop_size, min_freq, max_fund_freq, max_freq] = [int(x) for x in parameters]
 
 TESS_trim = 0.62
 RAVDESS_trim = 0.26
-fixed_len = 43195
+magic = 43195
 
 time_very_start = time.time()
 print('Start')
@@ -49,18 +49,18 @@ for dataset in ['TESS', 'RAVDESS']:
                 continue
             fs, x = wavfile.read(os.path.join(emotion_dir, file))
             
-            if len(x) >= fixed_len:
+            if len(x) >= magic:
                 if dataset == 'TESS':
-                    x = x[int((len(x) - fixed_len) / 2):][:fixed_len]
+                    x = x[int((len(x) - magic) / 2):][:magic]
                 else:
-                    x = x[-fixed_len:]
+                    x = x[-magic:]
             else: # add zeros at end
-                x = np.concatenate((x, [0] * (fixed_len - len(x))))
+                x = np.concatenate((x, [0] * (magic - len(x))))
 
             x = x / 32768 # convert 16-bit PCM to [-1, 1]
 
             s = librosa.feature.melspectrogram(y=x, sr=fs, n_fft=win_size, hop_length=hop_size)
-            mfcc = librosa.feature.mfcc(S=librosa.power_to_db(s), sr=fs)[1:16]
+            mfcc = librosa.feature.mfcc(S=librosa.power_to_db(s), sr=fs, n_mfcc=50)
 
             rms = librosa.feature.rmse(y=x, frame_length=win_size, hop_length=hop_size)
             zcr = librosa.feature.zero_crossing_rate(y=x, frame_length=win_size, hop_length=hop_size)
