@@ -9,6 +9,7 @@ import librosa
 from scipy.io import wavfile
 import os, time, csv, datetime
 
+part = 'test'
 ##part = sys.argv[1]
 parameters = [7, -1, 1024, 512, 80, 300, 8000]
 ##parameters[:(argc - 2)] = sys.argv[2:]
