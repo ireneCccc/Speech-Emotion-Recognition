@@ -1,5 +1,5 @@
 # Speech-Emotion-Recognition
-author: Tinaheng Wang & Yuehan Cai
+author: Tianheng Wang & Yuehan Cai
 
 Implement Speech Emotion Recognition using selected features and SVM, self-build CNN, LSTM.
 
